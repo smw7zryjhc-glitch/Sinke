@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch Adventure - الطاولة التنافسية</title>
+    <style>
+        :root {
+            --bg-deep: #090a0f;
+            --panel-bg: rgba(26, 27, 46, 0.75);
+            --accent-primary: #ff3366;
+            --accent-secondary: #4facfe;
+            --text-main: #ffffff;
+            --text-muted: #a0aec0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 51, 102, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(79, 172, 254, 0.15) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        .game-wrapper {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            color: var(--accent-primary);
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        /* لوحة اللعب (Grid) */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            background: rgba(15, 16, 23, 0.6);
+            padding: 12px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-weight: bold;
+            font-size: 1rem;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .cell.ladder {
+            border-color: rgba(72, 187, 120, 0.4);
+            background: rgba(72, 187, 120, 0.08);
+        }
+
+        .cell.snake {
+            border-color: rgba(245, 101, 101, 0.4);
+            background: rgba(245, 101, 101, 0.08);
+        }
+
+        .cell-number {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        /* تمثيل الشخصيات (Tokens) داخل الخانة */
+        .token-container {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .player-token {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .token-fox { background: linear-gradient(135deg, #ff7e5f, #feb47b); }
+        .token-panda { background: linear-gradient(135deg, #434343, #000000); border: 1px solid #fff; }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        /* لوحة التحكم والتحفيز */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .status-box {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            background: linear-gradient(135deg, var(--accent-primary), #ff1654);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 51, 102, 0.4);
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-wrapper">
+    <header>
+        <h1>Scratch Adventure</h1>
+        <p>مضمار التحدي العاطفي المطور</p>
+    </header>
+
+    <!-- لوحة اللعب (25 خانة) -->
+    <div class="board" id="board"></div>
+
+    <div class="control-panel">
+        <div class="status-box" id="gameStatus">دور اللاعب: 🦊 الثعلب. اضغط رمي النرد للبدء!</div>
+        <div class="actions">
+            <button id="rollBtn" onclick="playTurn()">رمي النرد 🎲</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // إعدادات اللعبة الأساسية بدقة عالية
+    const TOTAL_CELLS = 25;
+    
+    // تعريف السلالم والأفاعي (مواقع الانقال)
+    const SPECIAL_TILES = {
+        3: { type: 'ladder', target: 11, msg: '🚀 صعدت السلم الذهبي!' },
+        9: { type: 'snake', target: 4, msg: '🐍 زلقت مع الأفعى!' },
+        17: { type: 'ladder', target: 22, msg: '🚀 صعدت سلم الاختصار!' },
+        20: { type: 'snake', target: 12, msg: '🐍 تراجعت بسبب الأفعى!' }
+    };
+
+    let gameState = {
+        players: [
+            { id: 1, name: 'الثعلب', icon: '🦊', class: 'token-fox', pos: 1 },
+            { id: 2, name: 'البندا', icon: '🐼', class: 'token-panda', pos: 1 }
+        ],
+        currentTurn: 0, // 0 للثعلب، 1 للبندا
+        isLocked: false
+    };
+
+    const boardElement = document.getElementById('board');
+    const statusElement = document.getElementById('gameStatus');
+
+    // بناء اللوحة برمجياً بمعايير دقيقة
+    function initBoard() {
+        boardElement.innerHTML = '';
+        for (let i = 1; i <= TOTAL_CELLS; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.id = `cell-${i}`;
+            
+            if (SPECIAL_TILES[i]) {
+                cell.classList.add(SPECIAL_TILES[i].type);
+            }
+
+            const numSpan = document.createElement('span');
+            numSpan.classList.add('cell-number');
+            numSpan.innerText = i;
+            cell.appendChild(numSpan);
+
+            // حاوية للشخصيات المتواجدة في هذه الخانة
+            const tokenContainer = document.createElement('div');
+            tokenContainer.classList.add('token-container');
+            tokenContainer.id = `tokens-${i}`;
+            cell.appendChild(tokenContainer);
+
+            boardElement.appendChild(cell);
+        }
+        renderTokens();
+    }
+
+    // تحديث مواقع الشخصيات بصرياً على الخانات
+    function renderTokens() {
+        // تفريغ جميع الحاويات أولاً
+        for (let i = 1; i <= TOTAL_CELLS; i++) {
+            document.getElementById(`tokens-${i}`).innerHTML = '';
+        }
+
+        // توزيع الشخصيات في خاناتها الحالية
+        gameState.players.forEach(player => {
+            const container = document.getElementById(`tokens-${player.pos}`);
+            if (container) {
+                const token = document.createElement('div');
+                token.className = `player-token ${player.class}`;
+                token.innerText = player.icon;
+                token.title = player.name;
+                container.appendChild(token);
+            }
+        });
+    }
+
+    // تنفيذ دور اللاعب عند رمي النرد
+    async function playTurn() {
+        if (gameState.isLocked) return;
+        gameState.isLocked = true;
+
+        const currentPlayer = gameState.players[gameState.currentTurn];
+        const diceRoll = Math.floor(Math.random() * 6) + 1;
+        
+        statusStatusMsg(`🎲 رمى ${currentPlayer.name} النرد وحصل على: <strong>${diceRoll}</strong>`);
+        await sleep(800);
+
+        // تحريك اللاعب تدريجياً
+        let targetPos = currentPlayer.pos + diceRoll;
+        if (targetPos > TOTAL_CELLS) targetPos = TOTAL_CELLS;
+
+        currentPlayer.pos = targetPos;
+        renderTokens();
+
+        // التحقق من السلالم والأفاعي
+        if (SPECIAL_TILES[targetPos]) {
+            await sleep(500);
+            const special = SPECIAL_TILES[targetPos];
+            statusStatusMsg(`${special.msg}`);
+            currentPlayer.pos = special.target;
+            renderTokens();
+            await sleep(800);
+        }
+
+        // التحقق من الفوز
+        if (currentPlayer.pos === TOTAL_CELLS) {
+            statusStatusMsg(`🎉 مبروك! فاز اللاعب ${currentPlayer.name} بالسباق التنافسي!`);
+            document.getElementById('rollBtn').disabled = true;
+            return;
+        }
+
+        // تبديل الدور
+        gameState.currentTurn = 1 - gameState.currentTurn;
+        const nextPlayer = gameState.players[gameState.currentTurn];
+        statusStatusMsg(`دور اللاعب: ${nextPlayer.icon} ${nextPlayer.name}. اضغط رمي النرد!`);
+        
+        gameState.isLocked = false;
+    }
+
+    function statusStatusMsg(html) {
+        statusElement.innerHTML = html;
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // تشغيل اللعبة لأول مرة
+    initBoard();
+</script>
+
+</body>
+</html>
